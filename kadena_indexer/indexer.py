@@ -1,10 +1,13 @@
+import os
 import asyncio
 import logging
+import time
 from dataclasses import asdict
 
 import yaml
 from easydict import EasyDict
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
+from pymongo.server_api import ServerApi
 from .coordinator import Coordinator
 from .chainweb import ChainWeb
 
@@ -16,12 +19,34 @@ class Indexer:
     def __init__(self, config_file):
         self._tips = {}
         self.config = self._load_config(config_file)
-        self.mongo_client = MongoClient()
-        logger.info("Connected to MongoDB v{!s}".format(self.mongo_client.server_info()["version"]))
+        
+        # Use environment variable if available, otherwise use config
+        mongo_uri = os.environ.get('MONGO_URI') or self.config.get('mongo_uri', 'mongodb://mongo:27017')
+        logger.info(f"Connecting to MongoDB using URI: {mongo_uri}")
+        
+        self.mongo_client = self._connect_with_retry(mongo_uri)
+        
         self.db = self.mongo_client[self.config.db]
         self.coordinator = self._load_coordinator()
         self._check_indexes()
         self._prune_db()
+
+    def _connect_with_retry(self, mongo_uri, max_retries=5, delay=5):
+        retries = 0
+        while retries < max_retries:
+            try:
+                client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+                # Send a ping to confirm a successful connection
+                client.admin.command('ping')
+                logger.info("Connected to MongoDB v{!s}".format(client.server_info()["version"]))
+                return client
+            except errors.ServerSelectionTimeoutError as e:
+                retries += 1
+                logger.warning(f"Attempt {retries}/{max_retries} failed to connect to MongoDB: {e}")
+                if retries == max_retries:
+                    logger.error("Failed to connect to MongoDB after multiple attempts")
+                    raise
+                time.sleep(delay)
 
 
     def _load_config(self, config_file):
@@ -45,7 +70,7 @@ class Indexer:
                 logger.info("Pruned {:d} events for {:s}/{: <2}".format(res.deleted_count, name, chain))
 
     def _check_indexes(self):
-        """ This checks all the reqired indexes: coordinator collection + events collection """
+        """ This checks all the required indexes: coordinator collection + events collection """
         logger.info("Updating indexes")
         if "name_chain" not in self.db.coordinator.index_information():
             logger.info("Create coordinator index")

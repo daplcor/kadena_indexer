@@ -3,7 +3,7 @@ node: http://kadena-1:1848
 events:
   - name: coin.TRANSFER
     height: ~
-    chains: ["1","2"]
+    chains: ["1", "2"]
 
   - name: free.kishu-ken.TRANSFER
     height: [2300000, ~]

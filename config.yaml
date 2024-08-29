@@ -1,0 +1,61 @@
+db: kadena_events
+mongo_uri: "mongodb://root:test6test6withpas5528fjF@mongo:27017/admin?replicaSet=rs0&authSource=admin"
+node: http://io.kadenaiconnect.com:1848
+events:
+  - name: coin.TRANSFER
+    height: ~
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.ledger.SUPPLY
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.ledger.TOKEN-CREATE
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.ledger.RECONCILE
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.ledger.MINT
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-collection.ADD-TO-COLLECTION
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-collection.CREATE-COLLECTION
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-auction-sale.AUCTION-SALE-OFFER
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-auction-sale.PLACE-BID
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-auction-sale.AUCTION-SALE-BOUGHT
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-auction-sale.AUCTION-SALE-WITHDRAWN
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-fixed-sale.FIXED-SALE-OFFER
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-fixed-sale.FIXED-SALE-BOUGHT
+    height: [2300000, ~]
+    chains: ["8"]
+
+  - name: n_4e470a97222514a8662dd1219000a0431451b0ee.policy-fixed-sale.FIXED-SALE-WITHDRAWN
+    height: [2300000, ~]
+    chains: ["8"]
+
+
