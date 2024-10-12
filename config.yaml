@@ -58,4 +58,32 @@ events:
     height: [2300000, ~]
     chains: ["8"]
 
+  - name: n_e309f0fa7cf3a13f93a8da5325cdad32790d2070.ktg.CREATE-CONTRACT
+    height: [4000000, ~]
+    chains: ["2"]
+
+  - name: kaddex.exchange.CREATE_PAIR
+    height: [1000000, ~]
+    chains: ["2"]
+
+  - name: kaddex.exchange.SWAP
+    height: [1000000, ~]
+    chains: ["2"]
+
+  - name: kaddex.exchange.UPDATE
+    height: [1000000, ~]
+    chains: ["2"]
+
+  - name: kdlaunch.kdswap-exchange.CREATE_PAIR
+    height: [1000000, ~]
+    chains: ["1"]
+
+  - name: kdlaunch.kdswap-exchange.SWAP
+    height: [1000000, ~]
+    chains: ["1"]
+
+  - name: kdlaunch.kdswap-exchange.UPDATE
+    height: [1000000, ~]
+    chains: ["1"]
+
 
