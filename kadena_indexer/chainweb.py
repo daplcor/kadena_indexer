@@ -90,51 +90,30 @@ class ChainWeb:
         self._verify_ssl = verify_ssl
 
     async def __aenter__(self):
-        # Parse the URL to check if it's localhost/127.0.0.1
-        is_localhost = any(host in self._chainweb_node for host in ['localhost', '127.0.0.1', '0.0.0.0'])
-        
-        # Determine SSL verification setting
-        if self._verify_ssl is not None:
-            # Use explicit setting from config
-            verify_ssl = self._verify_ssl
-        elif is_localhost or self._chainweb_node.startswith('http://'):
-            # Disable for localhost or explicit HTTP
-            verify_ssl = False
-        else:
-            # Default to secure verification
-            verify_ssl = True
-        
-        # Create connector and session based on SSL verification needs
         tmout = aiohttp.ClientTimeout(sock_read=180.0, connect=30.0)
         
-        if not verify_ssl and self._chainweb_node.startswith('http://'):
-            # For explicit HTTP connections, don't use SSL at all
-            connector = aiohttp.TCPConnector(force_close=True)
-            self.session = await aiohttp.ClientSession(
-                timeout=tmout, 
-                read_bufsize=1024*1024,
-                connector=connector
-            ).__aenter__()
-            logger.info("Using plain HTTP connection for {}".format(self._chainweb_node))
-        elif not verify_ssl:
-            # For HTTPS with self-signed certs
-            import ssl
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            connector = aiohttp.TCPConnector(ssl=ssl_context)
-            self.session = await aiohttp.ClientSession(
-                timeout=tmout, 
-                read_bufsize=1024*1024,
-                connector=connector
-            ).__aenter__()
-            logger.info("SSL verification disabled for {}".format(self._chainweb_node))
+        # Simple: if URL starts with http://, no SSL. Otherwise, use SSL.
+        if self._chainweb_node.startswith('http://'):
+            # Plain HTTP connection
+            self.session = await aiohttp.ClientSession(timeout=tmout, read_bufsize=1024*1024).__aenter__()
+            logger.info("Using HTTP connection for {}".format(self._chainweb_node))
         else:
-            # Standard HTTPS connection with verification
-            self.session = await aiohttp.ClientSession(
-                timeout=tmout, 
-                read_bufsize=1024*1024
-            ).__aenter__()
+            # HTTPS connection - check if we need to verify SSL
+            if self._verify_ssl is False or any(host in self._chainweb_node for host in ['localhost', '127.0.0.1']):
+                import ssl
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                connector = aiohttp.TCPConnector(ssl=ssl_context)
+                self.session = await aiohttp.ClientSession(
+                    timeout=tmout, 
+                    read_bufsize=1024*1024,
+                    connector=connector
+                ).__aenter__()
+                logger.info("Using HTTPS with SSL verification disabled")
+            else:
+                # Standard HTTPS with verification
+                self.session = await aiohttp.ClientSession(timeout=tmout, read_bufsize=1024*1024).__aenter__()
 
         logger.info("Retrieving Chainweb info")
         async with self.session.get(self.info_url) as resp:
