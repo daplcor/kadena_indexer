@@ -3,13 +3,18 @@ import asyncio
 import logging
 import time
 from dataclasses import asdict
-
+print("MONGO_URI:", os.getenv('MONGO_URI'))
+print("NODE_URL:", os.getenv('NODE_URL'))
 import yaml
 from easydict import EasyDict
 from pymongo import MongoClient, errors
 from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
+
 from .coordinator import Coordinator
 from .chainweb import ChainWeb
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +55,32 @@ class Indexer:
 
 
     def _load_config(self, config_file):
+        """Load and process configuration file with environment variable interpolation"""
         logger.info("Loading config {}".format(config_file))
+        
         with open(config_file, "rb") as fd:
-            return EasyDict(yaml.safe_load(fd))
+            config_data = yaml.safe_load(fd)
+        
+        # Processes the config data recursively to handle nested env variables
+        def process_env_vars(data):
+            if isinstance(data, dict):
+                return {key: process_env_vars(value) for key, value in data.items()}
+            elif isinstance(data, list):
+                return [process_env_vars(item) for item in data]
+            elif isinstance(data, str):
+                # Handle ${VAR} format
+                if data.startswith('${') and data.endswith('}'):
+                    env_var = data[2:-1]
+                    env_value = os.getenv(env_var)
+                    if env_value is None:
+                        logger.warning(f"Environment variable {env_var} not found. Using default value: {data}")
+                        return data
+                    return env_value
+                return data
+            return data
+    
+        processed_config = process_env_vars(config_data)
+        return EasyDict(processed_config)
 
     def _load_coordinator(self):
         logger.info("Loading coordinator")
@@ -128,7 +156,10 @@ class Indexer:
     async def run(self):
         """ Async function to start the indexer """
         task_started = {}
-        async with ChainWeb(self.config.node) as cw:
+        print(f"Using node URL: {self.config.node}")
+        # Get SSL verification setting from config, defaulting to None (auto-detect)
+        verify_ssl = self.config.get('verify_ssl', None)
+        async with ChainWeb(self.config.node, verify_ssl=verify_ssl) as cw:
             logger.info("Start listening CW node")
             try:
                 async for b in cw.get_new_block():

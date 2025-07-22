@@ -6,5 +6,5 @@ setup(
    description='A Kadena chainweb Index',
    author='CryptoPascal',
    packages=['kadena_indexer'],
-   install_requires=['aiohttp', 'cachetools', 'easydict', 'orjson', 'portion', 'pymongo', 'PyYAML']
+   install_requires=['aiohttp', 'cachetools', 'easydict', 'orjson', 'portion', 'pymongo', 'PyYAML', 'python-dotenv']
 )

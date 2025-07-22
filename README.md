@@ -36,6 +36,12 @@ Three fields are mandatory:
 - `node`: URL of the Chainweb node service endpoint
 - `event`: Array of events to be handled by this indexer.
 
+Optional fields:
+
+- `verify_ssl`: Boolean to control SSL certificate verification (defaults to auto-detect based on URL)
+  - Set to `false` for localhost development or self-signed certificates
+  - Automatically disabled for localhost URLs or HTTP connections
+
 Each event is defined by:
  - `name`: FQN of the event: namespace + module + event
  - `chains`: Array of chains from which the events must be indexed

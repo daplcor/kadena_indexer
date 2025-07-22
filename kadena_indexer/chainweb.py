@@ -15,6 +15,7 @@ from .kadena_common import b64_decode
 logger = logging.getLogger(__name__)
 
 BLOCKS_PER_BATCH = 300
+BLOCKS_PER_REQUEST = 30
 
 def pact_hook(x):
     """ Pact hook for the JSON deserializer """
@@ -72,23 +73,68 @@ class ChainWebBlock:
 
     def events(self):
         """ Return all the events emitted by the block """
-        for rank, trx in enumerate(self.transactions_output()):
-            if "events" in trx:
-                yield from map(lambda x: Event(event_fqn(x),x["params"], trx["reqKey"] , self.chain, self.block_hash, rank, self.height, self.ts), trx["events"]) #pylint: disable=cell-var-from-loop
-
+        rank = 0
+        for trx in self.transactions_output():
+            for ev in trx.get("events", []):
+                yield Event(event_fqn(ev),ev["params"], trx["reqKey"] , self.chain, self.block_hash, rank, self.height, self.ts)
+                rank += 1
 
 class ChainWeb:
     """ Mainclass that handles all Chainweb communications stuffs """
-    def __init__(self, url):
+    def __init__(self, url, verify_ssl=None):
         self._chainweb_node = url
         self._network = None
         self.session = None
         self.network = None
         self.cache = FIFOCache(256)
+        self._verify_ssl = verify_ssl
 
     async def __aenter__(self):
-        tmout = aiohttp.ClientTimeout(sock_read=30.0, connect=30.0)
-        self.session = await aiohttp.ClientSession(timeout=tmout, read_bufsize=1024*1024).__aenter__()
+        # Parse the URL to check if it's localhost/127.0.0.1
+        is_localhost = any(host in self._chainweb_node for host in ['localhost', '127.0.0.1', '0.0.0.0'])
+        
+        # Determine SSL verification setting
+        if self._verify_ssl is not None:
+            # Use explicit setting from config
+            verify_ssl = self._verify_ssl
+        elif is_localhost or self._chainweb_node.startswith('http://'):
+            # Disable for localhost or explicit HTTP
+            verify_ssl = False
+        else:
+            # Default to secure verification
+            verify_ssl = True
+        
+        # Create connector and session based on SSL verification needs
+        tmout = aiohttp.ClientTimeout(sock_read=180.0, connect=30.0)
+        
+        if not verify_ssl and self._chainweb_node.startswith('http://'):
+            # For explicit HTTP connections, don't use SSL at all
+            connector = aiohttp.TCPConnector(force_close=True)
+            self.session = await aiohttp.ClientSession(
+                timeout=tmout, 
+                read_bufsize=1024*1024,
+                connector=connector
+            ).__aenter__()
+            logger.info("Using plain HTTP connection for {}".format(self._chainweb_node))
+        elif not verify_ssl:
+            # For HTTPS with self-signed certs
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            connector = aiohttp.TCPConnector(ssl=ssl_context)
+            self.session = await aiohttp.ClientSession(
+                timeout=tmout, 
+                read_bufsize=1024*1024,
+                connector=connector
+            ).__aenter__()
+            logger.info("SSL verification disabled for {}".format(self._chainweb_node))
+        else:
+            # Standard HTTPS connection with verification
+            self.session = await aiohttp.ClientSession(
+                timeout=tmout, 
+                read_bufsize=1024*1024
+            ).__aenter__()
 
         logger.info("Retrieving Chainweb info")
         async with self.session.get(self.info_url) as resp:
@@ -117,15 +163,14 @@ class ChainWeb:
         body = {"lower":[], "upper":[parent]}
 
         for mah in range(max_height, min_height-1, -BLOCKS_PER_BATCH):
-            _next = "INIT"
-            while _next:
-                params = {"limit":150, "minheight":max(mah - BLOCKS_PER_BATCH, min_height), "maxheight":mah}
-                if _next != "INIT":
+            _next = ""
+            while _next is not None:
+                params = {"limit":BLOCKS_PER_REQUEST, "minheight":max(mah - BLOCKS_PER_BATCH, min_height), "maxheight":mah}
+                if _next:
                     params["next"] = _next
 
                 async with self.session.post("{:s}/chain/{:s}/block/branch".format(self.api_url, chain), params=params, json=body) as resp:
                     data = orjson.loads(await resp.read())
-                    # data = await resp.json()
                     for blk in map(ChainWebBlock, data["items"]):
                         yield blk
                     _next = data["next"]

@@ -1,6 +1,6 @@
 db: kadena_events
-mongo_uri: "mongodb://root:test6test6withpas5528fjF@mongo:27017/admin?replicaSet=rs0&authSource=admin"
-node: http://io.kadenaiconnect.com:1848
+mongo_uri: ${MONGO_URI}
+node: ${NODE_URL}
 events:
   - name: coin.TRANSFER
     height: ~
