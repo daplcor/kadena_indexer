@@ -90,5 +90,22 @@ events:
     height: [1000000, ~]
     chains: ["2"]
 
+  - name: n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange.CREATE_PAIR
+    height: [5500000, ~]
+    chains: ["2"]
 
+  - name: n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange.SWAP
+    height: [5500000, ~]
+    chains: ["2"]
 
+  - name: n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange.UPDATE
+    height: [5500000, ~]
+    chains: ["2"]
+
+  - name: n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange.ADD_LIQUIDITY
+    height: [5500000, ~]
+    chains: ["2"]
+
+  - name: n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange.REMOVE_LIQUIDITY
+    height: [5500000, ~]
+    chains: ["2"]
